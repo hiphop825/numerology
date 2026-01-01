@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>地支十二宮互動圖</title>
+    <style>
+        :root {
+            --bg-color: #f0f0f0;
+            --palace-bg: #ffffff;
+            --text-color: #333;
+            --active-bg: #2c3e50; /* 選中時的深藍色 */
+            
+            /* 關係顏色提示 */
+            --hui-color: #e8f5e9;   /* 三會：淺綠 */
+            --hui-border: #4caf50;
+            --he-color: #e3f2fd;    /* 三合：淺藍 */
+            --he-border: #2196f3;
+            --other-color: #fff3e0; /* 其他：淺橘 */
+            --other-border: #ff9800;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 120px); /* 宮位加大至 120px */
+            grid-template-rows: repeat(4, 120px);
+            gap: 15px;
+            background: #fff;
+            padding: 25px;
+            border: 3px solid #444;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .branch {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--palace-bg);
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 2rem; /* 字體加大 */
+            font-weight: bold;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .branch:hover {
+            border-color: #999;
+            transform: translateY(-2px);
+        }
+
+        /* 選中狀態 */
+        .branch.selected {
+            background-color: var(--active-bg);
+            color: #fff;
+            border-color: var(--active-bg);
+            transform: scale(1.05);
+            z-index: 2;
+        }
+
+        /* 關係高亮 */
+        .related-hui { background-color: var(--hui-color) !important; border: 3px solid var(--hui-border) !important; }
+        .related-he { background-color: var(--he-color) !important; border: 3px solid var(--he-border) !important; }
+        .related-other { background-color: var(--other-color) !important; border: 2px dashed var(--other-border) !important; }
+
+        /* 中間資訊面板 */
+        #info-panel {
+            grid-column: 2 / 4;
+            grid-row: 2 / 4;
+            background: #f9f9f9;
+            border: 2px inset #eee;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .info-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #d32f2f;
+        }
+
+        .info-item {
+            font-size: 0.95rem;
+            margin: 3px 0;
+            color: #444;
+        }
+
+        .vault-tag {
+            color: #0d47a1;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="palace-grid">
+    <div class="branch" data-name="巳" style="grid-area: 1/1">巳</div>
+    <div class="branch" data-name="午" style="grid-area: 1/2">午</div>
+    <div class="branch" data-name="未" style="grid-area: 1/3">未</div>
+    <div class="branch" data-name="申" style="grid-area: 1/4">申</div>
+    
+    <div class="branch" data-name="辰" style="grid-area: 2/1">辰</div>
+    <div class="branch" data-name="酉" style="grid-area: 2/4">酉</div>
+    
+    <div class="branch" data-name="卯" style="grid-area: 3/1">卯</div>
+    <div class="branch" data-name="戌" style="grid-area: 3/4">戌</div>
+    
+    <div class="branch" data-name="寅" style="grid-area: 4/1">寅</div>
+    <div class="branch" data-name="丑" style="grid-area: 4/2">丑</div>
+    <div class="branch" data-name="子" style="grid-area: 4/3">子</div>
+    <div class="branch" data-name="亥" style="grid-area: 4/4">亥</div>
+
+    <div id="info-panel">
+        <div class="info-title">請點選宮位</div>
+        <div id="info-content"></div>
+    </div>
+</div>
+
+<script>
+    // 完整的邏輯數據與庫別
+    const branchData = {
+        '子': { hui: ['亥', '丑'], he: ['申', '辰'], vault: '水庫:辰', liuhe: '丑', xing: '卯', chong: '午', po: '酉', hai: '未' },
+        '丑': { hui: ['亥', '子'], he: ['巳', '酉'], vault: '金庫:丑', liuhe: '子', xing: ['戌', '未'], chong: '未', po: '辰', hai: '午' },
+        '寅': { hui: ['卯', '辰'], he: ['午', '戌'], vault: '火土庫:戌', liuhe: '亥', xing: ['巳', '申'], chong: '申', po: '亥', hai: '巳' },
+        '卯': { hui: ['寅', '辰'], he: ['亥', '未'], vault: '木庫:未', liuhe: '戌', xing: '子', chong: '酉', po: '午', hai: '辰' },
+        '辰': { hui: ['寅', '卯'], he: ['申', '子'], vault: '水庫:辰', liuhe: '酉', xing: '辰(自刑)', chong: '戌', po: '丑', hai: '卯' },
+        '巳': { hui: ['午', '未'], he: ['酉', '丑'], vault: '金庫:丑', liuhe: '申', xing: ['寅', '申'], chong: '亥', po: '申', hai: '寅' },
+        '午': { hui: ['巳', '未'], he: ['寅', '戌'], vault: '火土庫:戌', liuhe: '未', xing: '午(自刑)', chong: '子', po: '卯', hai: '丑' },
+        '未': { hui: ['巳', '午'], he: ['亥', '卯'], vault: '木庫:未', liuhe: '午', xing: ['丑', '戌'], chong: '丑', po: '戌', hai: '子' },
+        '申': { hui: ['酉', '戌'], he: ['子', '辰'], vault: '水庫:辰', liuhe: '巳', xing: ['寅', '巳'], chong: '寅', po: '巳', hai: '亥' },
+        '酉': { hui: ['申', '戌'], he: ['巳', '丑'], vault: '金庫:丑', liuhe: '辰', xing: '酉(自刑)', chong: '卯', po: '子', hai: '戌' },
+        '戌': { hui: ['申', '酉'], he: ['寅', '午'], vault: '火土庫:戌', liuhe: '卯', xing: ['未', '丑'], chong: '辰', po: '未', hai: '酉' },
+        '亥': { hui: ['子', '丑'], he: ['卯', '未'], vault: '木庫:未', liuhe: '寅', xing: '亥(自刑)', chong: '巳', po: '寅', hai: '申' }
+    };
+
+    const branches = document.querySelectorAll('.branch');
+    const infoTitle = document.querySelector('.info-title');
+    const infoContent = document.getElementById('info-content');
+
+    branches.forEach(el => {
+        el.addEventListener('click', () => {
+            const name = el.getAttribute('data-name');
+            updateSelection(name);
+        });
+    });
+
+    function updateSelection(selectedName) {
+        // 1. 清除舊樣式
+        branches.forEach(el => {
+            el.classList.remove('selected', 'related-hui', 'related-he', 'related-other');
+        });
+
+        // 2. 獲取數據
+        const data = branchData[selectedName];
+
+        // 3. 高亮目前選中的宮位
+        const activePalace = document.querySelector(`[data-name="${selectedName}"]`);
+        activePalace.classList.add('selected');
+
+        // 4. 更新中間面板
+        infoTitle.innerText = `${selectedName} 宮關係表`;
+        infoContent.innerHTML = `
+            <div class="info-item"><b>三會：</b>${data.hui.join('')}</div>
+            <div class="info-item"><b>三合：</b>${data.he.join('')} <span class="vault-tag">/ ${data.vault}</span></div>
+            <div class="info-item"><b>六合：</b>${data.liuhe} | <b>六沖：</b>${data.chong}</div>
+            <div class="info-item"><b>相刑：</b>${Array.isArray(data.xing) ? data.xing.join(',') : data.xing}</div>
+            <div class="info-item"><b>破/害：</b>${data.po} / ${data.hai}</div>
+        `;
+
+        // 5. 顏色提示各個關聯宮位
+        applyHighlight(data.hui, 'related-hui');
+        applyHighlight(data.he, 'related-he');
+        applyHighlight([data.liuhe, data.chong, data.po, data.hai].flat(), 'related-other');
+    }
+
+    function applyHighlight(names, className) {
+        const nameList = Array.isArray(names) ? names : [names];
+        nameList.forEach(n => {
+            const target = document.querySelector(`[data-name="${n}"]`);
+            if (target && !target.classList.contains('selected')) {
+                target.classList.add(className);
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
