@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>專業八字羅盤 - 簡化版</title>
+    <style>
+        :root {
+            --bg: #1a1a20;
+            
+            /* 五行色系 - 低飽和度但高辨識度 */
+            --wood: #96ceb4;   /* 溫潤綠 */
+            --wood-dim: rgba(150, 206, 180, 0.15);
+            --wood-glow: rgba(150, 206, 180, 0.4);
+            
+            --fire: #ffadad;   /* 柔和紅 */
+            --fire-dim: rgba(255, 173, 173, 0.15);
+            --fire-glow: rgba(255, 173, 173, 0.4);
+            
+            --earth: #ffe6a7;  /* 杏仁黃 */
+            --earth-dim: rgba(255, 230, 167, 0.15);
+            --earth-glow: rgba(255, 230, 167, 0.4);
+            
+            --metal: #dcdcdc;  /* 亮銀灰 */
+            --metal-dim: rgba(220, 220, 220, 0.15);
+            --metal-glow: rgba(220, 220, 220, 0.4);
+            
+            --water: #a0c4ff;  /* 天空藍 */
+            --water-dim: rgba(160, 196, 255, 0.15);
+            --water-glow: rgba(160, 196, 255, 0.4);
+
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #f0f0f0;
+            --text-sub: #a0a0a0;
+            --bg-card: #23232c;
+            --bg-dark: #2a2a35;
+            --transition-smooth: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body { 
+            background: var(--bg); 
+            color: var(--text-main); 
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            transition: var(--transition-smooth);
+        }
+
+        /* 左側側邊欄 - 改進版 */
+        .sidebar { 
+            width: 420px; /* 固定寬度 */
+            padding: 25px 20px; 
+            background: var(--bg-card); 
+            border-right: 1px solid #333; 
+            display: flex; 
+            flex-direction: column; 
+            /* ... 其他樣式 ... */
+        }
+
+        /* 保持侧边栏的正常布局 */
+        body.hide-compass .sidebar {
+            width: 420px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 99;
+        }
+
+        /* 調整側邊欄的垂直佈局 */
+        body.hide-compass .sidebar .top-tools,
+        body.hide-compass .sidebar .hint-text,
+        body.hide-compass .sidebar .section-title,
+        body.hide-compass .sidebar .bazi-grid {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 確保命盤網格有足夠空間 */
+        body.hide-compass .bazi-grid {
+            margin-bottom: 30px; /* 減少底部間距 */
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #23232c;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: #555;
+            border-radius: 3px;
+        }
+
+        /* 頂部工具列改進 */
+        .top-tools { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 15px; 
+        }
+        .top-tools button { 
+            flex: 1; 
+            padding: 12px 10px; 
+            background: #33333d; 
+            border: 1px solid #444; 
+            color: #ddd; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: bold; 
+            transition: var(--transition-smooth); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .top-tools button:hover { 
+            background: #3d3d4a; 
+            color: #fff; 
+            border-color: #666; 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .top-tools button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* 新增：羅盤切換按鈕 */
+        #toggle-compass {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: #33333d;
+            border: 1px solid #444;
+            border-radius: 50%;
+            color: #ddd;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            z-index: 1000;
+            transition: var(--transition-smooth);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        #toggle-compass:hover {
+            background: #3d3d4a;
+            color: #fff;
+            border-color: #666;
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+
+        body.hide-compass #toggle-compass {
+            background: var(--fire);
+            color: #222;
+            right: 430px;
+        }
+
+        .hint-text { 
+            font-size: 13px; 
+            color: var(--text-sub); 
+            text-align: center; 
+            background: rgba(0,0,0,0.2); 
+            border-left: 4px solid #555;
+        }
+
+        .section-title { 
+            font-size: 14px; 
+            font-weight: bold; 
+            color: #888; 
+            letter-spacing: 1px; 
+            border-bottom: 1px solid #444; 
+            padding-top: 20px;
+            padding-bottom: 10px; 
+            margin-bottom: 20px; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: "›";
+            font-size: 18px;
+            color: var(--water);
+        }
+
+        /* 命盤格位樣式改進 */
+        .bazi-grid { 
+            display: flex; 
+            gap: 15px; 
+            justify-content: center; 
+            margin-bottom: 50px; 
+            min-height: 240px; 
+            align-items: flex-start; 
+            transition: var(--transition-smooth);
+        }
+
+
+
+        .column { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 30px; 
+            align-items: center; 
+            max-width: 85px; 
+            position: relative; 
+        }
+        .col-header { 
+            font-size: 14px; 
+            color: #777; 
+            margin-bottom: -15px;
+            font-weight: bold; 
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 5;
+        }
+        
+        .slot { 
+            width: 75px; 
+            height: 75px; 
+            background: var(--bg-dark); 
+            border: 2px solid var(--glass-border); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border-radius: 15px; 
+            cursor: pointer; 
+            position: relative; 
+            font-size: 28px; 
+            font-weight: bold; 
+            transition: var(--transition-smooth);
+            user-select: none; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+            opacity: 1 !important;
+            filter: none !important;
+        }
+
+        body.hide-compass .slot {
+            width: 75px;
+            height: 75px;
+            font-size: 28px;
+            border-width: 2px;
+        }
+
+        .slot:hover { 
+            transform: translateY(-4px); 
+            border-color: #888; 
+            background: #3a3a45; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .slot:active {
+            transform: translateY(-1px);
+            transition-duration: 0.1s;
+        }
+
+        .slot.wood { border-color: var(--wood) !important; }
+        .slot.fire { border-color: var(--fire) !important; }
+        .slot.earth { border-color: var(--earth) !important; }
+        .slot.metal { border-color: var(--metal) !important; }
+        .slot.water { border-color: var(--water) !important; }
+
+        .node.wood { border-color: var(--wood) !important; }
+        .node.fire { border-color: var(--fire) !important; }
+        .node.earth { border-color: var(--earth) !important; }
+        .node.metal { border-color: var(--metal) !important; }
+        .node.water { border-color: var(--water) !important; }
+
+        /* --- 互動狀態樣式 --- */
+        
+        /* 變暗樣式 */
+        .dimmed { 
+            opacity: 0.3 !important;
+            filter: grayscale(90%) !important;
+            transform: scale(0.9) !important;
+            pointer-events: auto !important;
+            cursor: pointer;
+        }
+        .dimmed:hover {
+            opacity: 0.5 !important;
+            filter: grayscale(60%) !important;
+            transform: scale(0.95) !important;
+        }
+        
+        /* 主角樣式 */
+        .slot.main-active { 
+            border: 3px solid #fff !important; 
+            background: rgba(255,255,255,0.15) !important; 
+            box-shadow: 0 0 25px rgba(255,255,255,0.4), 0 8px 20px rgba(0,0,0,0.5) !important;
+            z-index: 10; 
+            transform: scale(1.08) !important;
+            opacity: 1 !important; 
+            filter: none !important;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 25px rgba(255,255,255,0.4), 0 8px 20px rgba(0,0,0,0.5); }
+            50% { box-shadow: 0 0 30px rgba(255,255,255,0.5), 0 10px 25px rgba(0,0,0,0.6); }
+            100% { box-shadow: 0 0 25px rgba(255,255,255,0.4), 0 8px 20px rgba(0,0,0,0.5); }
+        }
+        
+        /* 關係高亮 */
+        .rel-good { 
+            border-color: var(--wood) !important; 
+            color: var(--wood) !important; 
+            box-shadow: 0 0 15px var(--wood-glow) !important; 
+            opacity: 1 !important; 
+            filter: none !important; 
+        }
+        .rel-bad { 
+            border-color: var(--fire) !important; 
+            color: var(--fire) !important; 
+            box-shadow: 0 0 15px var(--fire-glow) !important; 
+            opacity: 1 !important; 
+            filter: none !important; 
+        }
+
+        /* 十神和藏干樣式 */
+        .shishen-top { 
+            position: absolute; 
+            top: -20px;
+            font-size: 12px; 
+            color: #999; 
+            width: 100%; 
+            text-align: center; 
+            pointer-events: none; 
+            font-weight: normal;
+            white-space: nowrap;
+            z-index: 1;
+        }
+
+        body.hide-compass .shishen-top {
+            font-size: 12px;
+            top: -20px;
+        }
+
+        .canggan-wrap { 
+            position: absolute; 
+            bottom: -85px; /* 從 -50px 改為 -55px，往下移5px */
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 120px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            pointer-events: none; 
+        }
+
+        body.hide-compass .cg-row {
+            font-size: 12px; /* 恢復原來字體大小 */
+        }
+
+        .cg-row { 
+            font-size: 12px; 
+            display: flex; 
+            gap: 5px; 
+            line-height: 1.3; 
+            white-space: nowrap; 
+            opacity: 0.9; 
+            margin-bottom: 3px;
+        }
+
+
+        /* 五行顏色文字 */
+        .wood { color: var(--wood) !important; border-color: var(--wood) !important; }
+        .fire { color: var(--fire) !important; border-color: var(--fire) !important; }
+        .earth { color: var(--earth) !important; border-color: var(--earth) !important; }
+        .metal { color: var(--metal) !important; border-color: var(--metal) !important; }
+        .water { color: var(--water) !important; border-color: var(--water) !important; }
+
+        /* 關係小字樣式 */
+        .relation-badge {
+            position: absolute;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 3px 8px;
+            border-radius: 15px;
+            white-space: nowrap;
+            z-index: 20;
+            pointer-events: none;
+            border: 2px solid currentColor;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            min-width: 20px;
+            text-align: center;
+            top: -10px;
+            right: -12px;
+        }
+
+        body.hide-compass .relation-badge {
+            font-size: 13px;
+            top: -12px;
+            right: -15px;
+        }
+        
+        /* 五行生剋關係小字樣式 */
+        .wuxing-relation-badge {
+            position: absolute;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            background: rgba(50, 50, 60, 0.95);
+            padding: 3px 8px;
+            border-radius: 15px;
+            white-space: nowrap;
+            z-index: 15;
+            pointer-events: none;
+            border: 2px solid currentColor;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            min-width: 20px;
+            text-align: center;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* 詳情面板改進 */
+        .info-card { 
+            background: var(--bg-card); 
+            border: 1px solid #444; 
+            border-radius: 15px; 
+            padding: 20px; 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            scrollbar-width: thin;
+            scrollbar-color: #555 #23232c;
+            transition: var(--transition-smooth);
+        }
+
+        /* 羅盤隱藏時，將詳情面板移到右側（原羅盤位置） */
+        body.hide-compass .info-card {
+            position: fixed;
+            top: 120px;
+            right: 20px; /* 貼右側 */
+            left: auto; /* 取消左側居中 */
+            transform: none; /* 取消 transform 居中 */
+            width: 400px; /* 固定寬度 */
+            max-width: 400px; /* 最大寬度 */
+            max-height: 70vh;
+            z-index: 100;
+            background: rgba(35, 35, 44, 0.98);
+            border: 2px solid var(--water);
+            box-shadow: 0 25px 80px rgba(0,0,0,0.8);
+            backdrop-filter: blur(15px);
+            padding: 25px;
+            overflow-y: auto;
+            margin: 0; /* 清除邊距 */
+        }
+
+        .info-card::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .info-card::-webkit-scrollbar-track {
+            background: #23232c;
+        }
+
+        .info-card::-webkit-scrollbar-thumb {
+            background-color: #666;
+            border-radius: 4px;
+        }
+
+        .info-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 20px; 
+            border-bottom: 2px solid #444; 
+            padding-bottom: 20px; 
+            margin-bottom: 15px;
+        }
+        
+        body.hide-compass .info-header {
+            justify-content: center;
+            padding-bottom: 25px;
+        }
+
+        #info-big-char { 
+            font-size: 48px; 
+            font-weight: bold; 
+            min-width: 70px;
+            text-align: center;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        body.hide-compass #info-big-char {
+            font-size: 64px;
+            min-width: 90px;
+        }
+
+        #info-attr { 
+            font-size: 16px; 
+            color: #aaa; 
+            line-height: 1.5;
+        }
+
+        body.hide-compass #info-attr {
+            font-size: 18px;
+        }
+        
+        .detail-row { 
+            display: flex; 
+            font-size: 15px; 
+            line-height: 1.7; 
+            border-bottom: 1px dashed #333; 
+            padding: 10px 0; 
+            align-items: flex-start;
+        }
+
+        body.hide-compass .detail-row {
+            font-size: 16px;
+            padding: 12px 0;
+        }
+
+        .detail-label { 
+            color: #888; 
+            width: 100px; 
+            flex-shrink: 0; 
+            font-weight: bold; 
+            font-size: 14px;
+        }
+
+        body.hide-compass .detail-label {
+            width: 120px;
+            font-size: 15px;
+        }
+
+        .detail-val { 
+            color: #ddd; 
+            flex: 1;
+        }
+
+        .rel-group { 
+            margin-top: 15px; 
+            padding-top: 12px;
+            border-top: 1px solid #333;
+        }
+        .rel-title { 
+            font-size: 15px; 
+            margin-bottom: 12px; 
+            font-weight: bold; 
+            color: #aaa; 
+            border-left: 5px solid #555; 
+            padding-left: 12px; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rel-title::before {
+            content: "•";
+            font-size: 22px;
+        }
+        .rel-item { 
+            font-size: 14px; 
+            margin-bottom: 10px; 
+            color: #ddd; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 6px 0;
+        }
+        .rel-tag { 
+            display: inline-flex; 
+            padding: 5px 12px; 
+            border-radius: 8px; 
+            font-size: 12px; 
+            color: #222; 
+            font-weight: bold; 
+            min-width: 45px; 
+            text-align: center;
+            justify-content: center;
+            align-items: center;
+            height: 26px;
+            flex-shrink: 0;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+
+        /* 右側主畫布 - 羅盤區 */
+        .main-content { 
+            flex-grow: 1; 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: radial-gradient(circle at center, #2a2a35 0%, #111 90%); 
+            overflow: hidden; 
+            transition: var(--transition-smooth);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 羅盤隱藏時的主內容區 */
+        body.hide-compass .main-content {
+            flex-grow: 0;
+            width: 0;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        #container { 
+            position: relative; 
+            width: 800px; 
+            height: 800px; 
+            transform-origin: center center; 
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        }
+        
+        .compass-ring { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            border-radius: 50%; 
+            border: 1px solid rgba(255,255,255,0.08); 
+            pointer-events: none; 
+        }
+        .ring-1 { 
+            width: 160px; 
+            height: 160px; 
+            border-color: rgba(255,255,255,0.1); 
+            background: rgba(0,0,0,0.2); 
+        } 
+        .ring-2 { 
+            width: 320px; 
+            height: 320px; 
+            border-width: 2px;
+        }
+        .ring-3 { 
+            width: 520px; 
+            height: 520px; 
+            border: 2px solid rgba(255,255,255,0.15); 
+        }
+        .axis-line { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            width: 100%; 
+            height: 1px; 
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 15%, rgba(255,255,255,0.05) 85%, transparent 100%);
+            pointer-events: none; 
+        }
+
+        canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            pointer-events: none; 
+            z-index: 5; 
+        }
+        
+        /* 羅盤節點 */
+        .node { 
+            position: absolute; 
+            width: 52px; 
+            height: 52px; 
+            margin: -26px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: var(--transition-smooth); 
+            background: var(--bg-card); 
+            border: 2px solid #555; 
+            z-index: 10; 
+            font-size: 22px; 
+            user-select: none; 
+            color: inherit !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            opacity: 1 !important;
+            filter: none !important;
+        }
+        .node:hover { 
+            transform: scale(1.2); 
+            border-color: #bbb; 
+            color: #fff; 
+            z-index: 50; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+
+        .node:active {
+            transform: scale(1.1);
+            transition-duration: 0.1s;
+        }
+        
+        /* 羅盤節點狀態 */
+        .node.dimmed { 
+            opacity: 0.3 !important;
+            filter: grayscale(90%) !important;
+            transform: scale(0.9) !important;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+        
+        /* 羅盤節點主角樣式 */
+        .node.main-active { 
+            transform: scale(1.4) !important; 
+            border-color: #fff !important; 
+            background: #444 !important; 
+            color: #fff !important; 
+            z-index: 60; 
+            box-shadow: 0 0 30px rgba(255,255,255,0.4), 0 8px 25px rgba(0,0,0,0.7) !important; 
+            opacity: 1 !important; 
+            filter: none !important; 
+            animation: node-pulse 2s infinite;
+        }
+
+        @keyframes node-pulse {
+            0% { box-shadow: 0 0 30px rgba(255,255,255,0.4), 0 8px 25px rgba(0,0,0,0.7); }
+            50% { box-shadow: 0 0 35px rgba(255,255,255,0.5), 0 10px 30px rgba(0,0,0,0.8); }
+            100% { box-shadow: 0 0 30px rgba(255,255,255,0.4), 0 8px 25px rgba(0,0,0,0.7); }
+        }
+        
+        /* 羅盤節點關係高亮 */
+        .node.rel-good { 
+            border-color: var(--wood) !important; 
+            color: var(--wood) !important; 
+            opacity: 1 !important; 
+            filter: none !important; 
+            box-shadow: 0 0 20px var(--wood-glow) !important;
+        }
+        .node.rel-bad { 
+            border-color: var(--fire) !important; 
+            color: var(--fire) !important; 
+            opacity: 1 !important; 
+            filter: none !important; 
+            box-shadow: 0 0 20px var(--fire-glow) !important;
+        }
+        
+        /* 選擇器 */
+        #picker-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            display: none; 
+            z-index: 5000; 
+            background: rgba(0,0,0,0.7); 
+            backdrop-filter: blur(5px); 
+        }
+        .picker-menu { 
+            position: absolute; 
+            background: var(--bg-card); 
+            border: 1px solid #666; 
+            border-radius: 15px; 
+            padding: 20px; 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 12px; 
+            box-shadow: 0 25px 70px rgba(0,0,0,0.8); 
+        }
+        .picker-btn { 
+            width: 52px; 
+            height: 52px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            font-size: 22px; 
+            background: #333; 
+            color: #bbb; 
+            transition: var(--transition-smooth); 
+            border: 1px solid transparent; 
+        }
+        .picker-btn:hover { 
+            background: #555; 
+            color: #fff; 
+            transform: scale(1.1); 
+            border-color: #fff; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+
+        #zoom-overlay { 
+            position: fixed; 
+            top:0; 
+            left:0; 
+            width:100%; 
+            height:100%; 
+            background: rgba(0,0,0,0.92); 
+            display:none; 
+            align-items:center; 
+            justify-content:center; 
+            z-index: 4000; 
+            backdrop-filter: blur(8px); 
+            cursor: pointer;
+        }
+        .zoom-container { 
+            transform: scale(1.6); 
+            pointer-events: none; 
+            transition: var(--transition-smooth);
+        }
+        
+        /* Zoom 修正 */
+        .zoom-container .bazi-grid { 
+            gap: 60px; 
+            background: rgba(35, 35, 44, 0.9);
+            border-radius: 25px;
+            border: 2px solid #555;
+        }
+        .zoom-container .column { 
+            gap: 70px; 
+            max-width: none; 
+        }
+        .zoom-container .slot { 
+            width: 120px; 
+            height: 120px; 
+            font-size: 48px; 
+            border-width: 3px; 
+            margin: 8px 8px 35px 8px;
+        }
+        .zoom-container .shishen-top { 
+            font-size: 20px; 
+            top: -40px; 
+        }
+        .zoom-container .canggan-wrap { 
+            bottom: -105px; 
+        }
+        .zoom-container .cg-row { 
+            font-size: 16px; 
+        }
+        .zoom-container .relation-badge {
+            top: -15px;
+            right: -20px;
+            font-size: 15px;
+            padding: 4px 10px;
+            min-width: 24px;
+        }
+        .zoom-container .wuxing-relation-badge {
+            bottom: -30px;
+            font-size: 15px;
+            padding: 4px 10px;
+            min-width: 24px;
+        }
+
+        /* 載入動畫 */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader {
+            width: 70px;
+            height: 70px;
+            border: 5px solid #333;
+            border-top-color: var(--water);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 確保在較小螢幕上也能正常顯示 */
+        @media (max-width: 1200px) {
+            body.hide-compass .info-card {
+                width: 350px;
+                max-width: 350px;
+            }
+            
+            body.hide-compass .sidebar {
+                width: 380px;
+            }
+            
+            body.hide-compass #toggle-compass {
+                right: 390px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            body.hide-compass .info-card {
+                width: 300px;
+                max-width: 300px;
+            }
+            
+            body.hide-compass .sidebar {
+                width: 340px;
+            }
+            
+            body.hide-compass #toggle-compass {
+                right: 350px;
+            }
+        }
+
+        /* 操作提示 */
+        .tooltip {
+            position: absolute;
+            background: #333;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px 6px 0;
+            border-style: solid;
+            border-color: #333 transparent transparent;
+        }
+
+        /* 確保主角和相關元素不受影響 */
+        .main-active,
+        .rel-good,
+        .rel-bad {
+            opacity: 1 !important;
+            filter: none !important;
+        }
+
+        /* 羅盤隱藏模式下的詳情面板 */
+        body.hide-compass .info-card.compass-hidden-mode {
+            position: fixed !important;
+            top: 120px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 90% !important;
+            max-width: 900px !important;
+            height: auto !important;
+            max-height: 70vh !important;
+            overflow-y: auto !important;
+            z-index: 100 !important;
+            background: rgba(35, 35, 44, 0.98) !important;
+            backdrop-filter: blur(15px) !important;
+            border: 2px solid var(--water) !important;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.8) !important;
+            padding: 30px !important;
+            margin: 0 !important;
+        }
+
+
+
+        @media (hover: none) {
+            .slot:hover, .node:hover {
+                transform: none !important;
+            }
+            
+            .slot:active, .node:active {
+                transform: scale(0.95) !important;
+            }
+            
+            .picker-btn:hover {
+                transform: none !important;
+            }
+            
+            .top-tools button:hover {
+                transform: none !important;
+                box-shadow: none !important;
+            }
+        }
+
+        /* 高對比模式支援 */
+        @media (prefers-contrast: high) {
+            .slot, .node {
+                border-width: 3px;
+            }
+            
+            .slot.main-active, .node.main-active {
+                border-width: 4px;
+            }
+            
+            .rel-good, .rel-bad {
+                border-width: 3px;
+            }
+        }
+    
+    </style>
+</head>
+<body>
+
+<!-- 載入動畫 -->
+<div id="loading-overlay">
+    <div class="loader"></div>
+</div>
+
+<!-- 羅盤切換按鈕 -->
+<button id="toggle-compass" title="切換羅盤顯示">◎</button>
+
+<div class="sidebar">
+    <div class="top-tools">
+        <button onclick="randomBazi()">
+            <span>🎲</span>
+            <span>隨機排盤</span>
+        </button>
+        <button onclick="toggleZoom()">
+            <span>🔍</span>
+            <span>放大檢視</span>
+        </button>
+    </div>
+    <div class="hint-text">💡 點選文字：聚焦直接關聯 (再次點選還原)</div>
+    
+    <div class="section-title">本命四柱 (日元：<span id="dm-tag" style="color:#fff">?</span>)</div>
+    <div id="bazi-box" class="bazi-grid"></div>
+    
+    <div class="section-title">五行生剋與詳解</div>
+    <div class="info-card">
+        <div class="info-header">
+            <div id="info-big-char">-</div>
+            <div id="info-attr">請點擊格位</div>
+        </div>
+        <div id="info-body"></div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div id="container">
+        <div class="compass-ring ring-1"></div>
+        <div class="compass-ring ring-2"></div>
+        <div class="compass-ring ring-3"></div>
+        <div class="axis-line" style="transform: rotate(0deg)"></div>
+        <div class="axis-line" style="transform: rotate(90deg)"></div>
+        <div class="axis-line" style="transform: rotate(45deg); opacity:0.3"></div>
+        <div class="axis-line" style="transform: rotate(135deg); opacity:0.3"></div>
+
+        <canvas id="canvas" width="800" height="800"></canvas>
+        <div id="map"></div>
+    </div>
+</div>
+
+<div id="zoom-overlay" onclick="toggleZoom()">
+    <div id="zoom-target" class="zoom-container"></div>
+</div>
+
+<div id="picker-overlay" onclick="closePicker()">
+    <div id="picker-menu" class="picker-menu" onclick="event.stopPropagation()"></div>
+</div>
+
+<!-- 提示工具 -->
+<div id="tooltip" class="tooltip"></div>
+
+<script>
+    // --- 核心數據 ---
+    const GANS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+    const ZHIS = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+    
+    const attrMap = {
+        '甲':'wood','乙':'wood','寅':'wood','卯':'wood',
+        '丙':'fire','丁':'fire','巳':'fire','午':'fire',
+        '戊':'earth','己':'earth','辰':'earth','戌':'earth','丑':'earth','未':'earth',
+        '庚':'metal','辛':'metal','申':'metal','酉':'metal',
+        '壬':'water','癸':'water','亥':'water','子':'water',
+        '木':'wood','火':'fire','土':'earth','金':'metal','水':'water'
+    };
+
+    const ELEMENT_ORDER = ['wood', 'fire', 'earth', 'metal', 'water'];
+    const ELEM_NAME = {'wood':'木', 'fire':'火', 'earth':'土', 'metal':'金', 'water':'水'};
+
+    // 詳細資料庫
+    const INFO_DB = {
+        '木': { yy: '-', wuxing: '木', dir: '東', season: '春' },
+        '火': { yy: '-', wuxing: '火', dir: '南', season: '夏' },
+        '土': { yy: '-', wuxing: '土', dir: '中', season: '季夏' },
+        '金': { yy: '-', wuxing: '金', dir: '西', season: '秋' },
+        '水': { yy: '-', wuxing: '水', dir: '北', season: '冬' },
+
+        '甲': { yy: '陽', wuxing: '木', dir: '東方', season: '春', jieqi: '-' },
+        '乙': { yy: '陰', wuxing: '木', dir: '東方', season: '春', jieqi: '-' },
+        '丙': { yy: '陽', wuxing: '火', dir: '南方', season: '夏', jieqi: '-' },
+        '丁': { yy: '陰', wuxing: '火', dir: '南方', season: '夏', jieqi: '-' },
+        '戊': { yy: '陽', wuxing: '土', dir: '中央', season: '長夏', jieqi: '-' },
+        '己': { yy: '陰', wuxing: '土', dir: '中央', season: '長夏', jieqi: '-' },
+        '庚': { yy: '陽', wuxing: '金', dir: '西方', season: '秋', jieqi: '-' },
+        '辛': { yy: '陰', wuxing: '金', dir: '西方', season: '秋', jieqi: '-' },
+        '壬': { yy: '陽', wuxing: '水', dir: '北方', season: '冬', jieqi: '-' },
+        '癸': { yy: '陰', wuxing: '水', dir: '北方', season: '冬', jieqi: '-' },
+
+        '寅': { yy: '陽', wuxing: '木', shengxiao: '虎', month: '農曆一月', season: '孟春', jieqi: '立春、雨水', time: '03-05時' },
+        '卯': { yy: '陰', wuxing: '木', shengxiao: '兔', month: '農曆二月', season: '仲春', jieqi: '驚蟄、春分', time: '05-07時' },
+        '辰': { yy: '陽', wuxing: '土', shengxiao: '龍', month: '農曆三月', season: '季春', jieqi: '清明、穀雨', time: '07-09時' },
+        '巳': { yy: '陰', wuxing: '火', shengxiao: '蛇', month: '農曆四月', season: '孟夏', jieqi: '立夏、小滿', time: '09-11時' },
+        '午': { yy: '陽', wuxing: '火', shengxiao: '馬', month: '農曆五月', season: '仲夏', jieqi: '芒種、夏至', time: '11-13時' },
+        '未': { yy: '陰', wuxing: '土', shengxiao: '羊', month: '農曆六月', season: '季夏', jieqi: '小暑、大暑', time: '13-15時' },
+        '申': { yy: '陽', wuxing: '金', shengxiao: '猴', month: '農曆七月', season: '孟秋', jieqi: '立秋、處暑', time: '15-17時' },
+        '酉': { yy: '陰', wuxing: '金', shengxiao: '雞', month: '農曆八月', season: '仲秋', jieqi: '白露、秋分', time: '17-19時' },
+        '戌': { yy: '陽', wuxing: '土', shengxiao: '狗', month: '農曆九月', season: '季秋', jieqi: '寒露、霜降', time: '19-21時' },
+        '亥': { yy: '陰', wuxing: '水', shengxiao: '豬', month: '農曆十月', season: '孟冬', jieqi: '立冬、小雪', time: '21-23時' },
+        '子': { yy: '陽', wuxing: '水', shengxiao: '鼠', month: '農曆十一月', season: '仲冬', jieqi: '大雪、冬至', time: '23-01時' },
+        '丑': { yy: '陰', wuxing: '土', shengxiao: '牛', month: '農曆十二月', season: '季冬', jieqi: '小寒、大寒', time: '01-03時' }
+    };
+
+    const REL_DETAILS = {
+        // 基礎五行
+        '木':{good:[],bad:[]}, '火':{good:[],bad:[]}, '土':{good:[],bad:[]}, '金':{good:[],bad:[]}, '水':{good:[],bad:[]},
+        
+        '甲': { good: [{t:['己'], d:'甲己合土 (中正)'}], bad: [{t:['庚'], d:'庚剋甲'},{t:['戊'], d:'甲剋戊'}] },
+        '乙': { good: [{t:['庚'], d:'乙庚合金 (仁義)'}], bad: [{t:['辛'], d:'辛剋乙'},{t:['己'], d:'乙剋己'}] },
+        '丙': { good: [{t:['辛'], d:'丙辛合水 (威制)'}], bad: [{t:['壬'], d:'壬剋丙'},{t:['庚'], d:'丙剋庚'}] },
+        '丁': { good: [{t:['壬'], d:'丁壬合木 (淫匿)'}], bad: [{t:['癸'], d:'癸剋丁'},{t:['辛'], d:'丁剋辛'}] },
+        '戊': { good: [{t:['癸'], d:'戊癸合火 (無情)'}], bad: [{t:['甲'], d:'甲剋戊'},{t:['壬'], d:'戊剋壬'}] },
+        '己': { good: [{t:['甲'], d:'甲己合土 (中正)'}], bad: [{t:['乙'], d:'乙剋己'},{t:['癸'], d:'己剋癸'}] },
+        '庚': { good: [{t:['乙'], d:'乙庚合金 (仁義)'}], bad: [{t:['丙'], d:'丙剋庚'},{t:['甲'], d:'庚剋甲'}] },
+        '辛': { good: [{t:['丙'], d:'丙辛合水 (威制)'}], bad: [{t:['丁'], d:'丁剋辛'},{t:['乙'], d:'辛剋乙'}] },
+        '壬': { good: [{t:['丁'], d:'丁壬合木 (淫匿)'}], bad: [{t:['戊'], d:'戊剋壬'},{t:['丙'], d:'壬剋丙'}] },
+        '癸': { good: [{t:['戊'], d:'戊癸合火 (無情)'}], bad: [{t:['己'], d:'己剋癸'},{t:['丁'], d:'癸剋丁'}] },
+        
+        '子': { good: [{t:['丑'], d:'子丑六合'},{t:['申','辰'],d:'申子辰 三合水'},{t:['亥','丑'],d:'亥子丑 三會水'}], bad: [{t:['午'], d:'子午沖'},{t:['卯'], d:'子卯刑'},{t:['未'], d:'子未害'}] },
+        '丑': { good: [{t:['子'], d:'子丑六合'},{t:['巳','酉'],d:'巳酉丑 三合金'},{t:['亥','子'],d:'亥子丑 三會水'}], bad: [{t:['未'], d:'丑未沖'},{t:['戌','未'], d:'丑戌未 三刑'},{t:['午'], d:'丑午害'}] },
+        '寅': { good: [{t:['亥'], d:'寅亥六合'},{t:['午','戌'],d:'寅午戌 三合火'},{t:['卯','辰'],d:'寅卯辰 三會木'}], bad: [{t:['申'], d:'寅申沖'},{t:['巳','申'], d:'寅巳申 三刑'},{t:['巳'], d:'寅巳害'}] },
+        '卯': { good: [{t:['戌'], d:'卯戌六合'},{t:['亥','未'],d:'亥卯未 三合木'},{t:['寅','辰'],d:'寅卯辰 三會木'}], bad: [{t:['酉'], d:'卯酉沖'},{t:['子'], d:'子卯刑'},{t:['辰'], d:'卯辰害'}] },
+        '辰': { good: [{t:['酉'], d:'辰酉六合'},{t:['申','子'],d:'申子辰 三合水'},{t:['寅','卯'],d:'寅卯辰 三會木'}], bad: [{t:['戌'], d:'辰戌沖'},{t:['辰'], d:'辰辰自刑'},{t:['卯'], d:'卯辰害'}] },
+        '巳': { good: [{t:['申'], d:'巳申六合'},{t:['酉','丑'],d:'巳酉丑 三合金'},{t:['午','未'],d:'巳午未 三會火'}], bad: [{t:['亥'], d:'巳亥沖'},{t:['寅','申'], d:'寅巳申 三刑'},{t:['寅'], d:'寅巳害'}] },
+        '午': { good: [{t:['未'], d:'午未六合'},{t:['寅','戌'],d:'寅午戌 三合火'},{t:['巳','未'],d:'巳午未 三會火'}], bad: [{t:['子'], d:'子午沖'},{t:['午'], d:'午午自刑'},{t:['丑'], d:'丑午害'}] },
+        '未': { good: [{t:['午'], d:'午未六合'},{t:['亥','卯'],d:'亥卯未 三合木'},{t:['巳','午'],d:'巳午未 三會火'}], bad: [{t:['丑'], d:'丑未沖'},{t:['丑','戌'], d:'丑戌未 三刑'},{t:['子'], d:'子未害'}] },
+        '申': { good: [{t:['巳'], d:'巳申六合'},{t:['子','辰'],d:'申子辰 三合水'},{t:['酉','戌'],d:'申酉戌 三會金'}], bad: [{t:['寅'], d:'寅申沖'},{t:['寅','巳'], d:'寅巳申 三刑'},{t:['亥'], d:'申亥害'}] },
+        '酉': { good: [{t:['辰'], d:'辰酉六合'},{t:['巳','丑'],d:'巳酉丑 三合金'},{t:['申','戌'],d:'申酉戌 三會金'}], bad: [{t:['卯'], d:'卯酉沖'},{t:['酉'], d:'酉酉自刑'},{t:['戌'], d:'酉戌害'}] },
+        '戌': { good: [{t:['卯'], d:'卯戌六合'},{t:['寅','午'],d:'寅午戌 三合火'},{t:['申','酉'],d:'申酉戌 三會金'}], bad: [{t:['辰'], d:'辰戌沖'},{t:['丑','未'], d:'丑戌未 三刑'},{t:['酉'], d:'酉戌害'}] },
+        '亥': { good: [{t:['寅'], d:'寅亥六合'},{t:['卯','未'],d:'亥卯未 三合木'},{t:['子','丑'],d:'亥子丑 三會水'}], bad: [{t:['巳'], d:'巳亥沖'},{t:['亥'], d:'亥亥自刑'},{t:['申'], d:'申亥害'}] }
+    };
+
+    const CANG_GAN = {
+        '子':['癸'],'丑':['己','癸','辛'],'寅':['甲','丙','戊'],'卯':['乙'],'辰':['戊','乙','癸'],'巳':['丙','庚','戊'],'午':['丁','己'],'未':['己','丁','乙'],'申':['庚','壬','戊'],'酉':['辛'],'戌':['戊','辛','丁'],'亥':['壬','甲']
+    };
+
+    // --- 狀態管理 ---
+    let bazi = { gan: ["癸", "庚", "乙", "戊"], zhi: ["亥", "申", "酉", "申"] };
+    let curMain = null;
+    let isAnimating = false;
+    let lastFrameTime = 0;
+    const FRAME_INTERVAL = 1000 / 60; // 60 FPS
+    let compassVisible = true; // 羅盤顯示狀態
+
+    // --- 工具函數 ---
+    function showTooltip(text, x, y) {
+        const tooltip = document.getElementById('tooltip');
+        tooltip.textContent = text;
+        tooltip.style.left = `${x}px`;
+        tooltip.style.top = `${y}px`;
+        tooltip.style.opacity = '1';
+        
+        setTimeout(() => {
+            tooltip.style.opacity = '0';
+        }, 2000);
+    }
+
+    function getFiveRel(src, tgt) {
+        if (src === tgt) return { type: 'same', label: '同我 (比劫)' };
+        const sAttr = attrMap[src]; 
+        const tAttr = attrMap[tgt];
+        const sIdx = ELEMENT_ORDER.indexOf(sAttr); 
+        const tIdx = ELEMENT_ORDER.indexOf(tAttr);
+        const diff = (tIdx - sIdx + 5) % 5;
+        
+        switch(diff) {
+            case 0: return { type: 'same', label: '同我 (比劫)' };
+            case 1: return { type: 'child', label: '我生 (食傷)' };
+            case 2: return { type: 'prisoner', label: '我剋 (財星)' };
+            case 3: return { type: 'enemy', label: '剋我 (官殺)' };
+            case 4: return { type: 'mother', label: '生我 (印星)' };
+        }
+    }
+
+    function getShiShen(target, dm) {
+        if (!target || !dm || target === dm) return target === dm ? "日主" : "";
+        const tA = attrMap[target], dmA = attrMap[dm];
+        const isSameYY = (INFO_DB[target].yy === INFO_DB[dm].yy);
+        const relMap = {
+            'wood': {'wood':'比劫','fire':'食傷','earth':'財星','metal':'官殺','water':'印星'},
+            'fire': {'fire':'比劫','earth':'食傷','metal':'財星','water':'官殺','wood':'印星'},
+            'earth': {'earth':'比劫','metal':'食傷','water':'財星','wood':'官殺','fire':'印星'},
+            'metal': {'metal':'比劫','water':'食傷','wood':'財星','fire':'官殺','earth':'印星'},
+            'water': {'water':'比劫','wood':'食傷','fire':'財星','earth':'官殺','metal':'印星'}
+        };
+        const type = relMap[dmA][tA];
+        const names = {'比劫':isSameYY?'比肩':'劫財','食傷':isSameYY?'食神':'傷官','財星':isSameYY?'偏財':'正財','官殺':isSameYY?'七殺':'正官','印星':isSameYY?'偏印':'正印'};
+        return names[type];
+    }
+
+    // 五行生剋關係計算函數
+    function getWuxingRelation(dm, target) {
+        if (!dm || !target || target === dm) return null;
+        
+        const dmAttr = attrMap[dm];
+        const targetAttr = attrMap[target];
+        
+        if (!dmAttr || !targetAttr) return null;
+        
+        // 五行相同
+        if (dmAttr === targetAttr) {
+            return {
+                type: 'tongwo',
+                text: '同我',
+                fullName: '同我 (比劫)'
+            };
+        }
+        
+        const sIdx = ELEMENT_ORDER.indexOf(dmAttr);
+        const tIdx = ELEMENT_ORDER.indexOf(targetAttr);
+        
+        // 計算生剋關係
+        const diff = (tIdx - sIdx + 5) % 5;
+        
+        switch(diff) {
+            case 1: // 我生 (食傷)
+                return {
+                    type: 'wosheng',
+                    text: '我生',
+                    fullName: '我生 (食傷)'
+                };
+            case 2: // 我剋 (財星)
+                return {
+                    type: 'woke',
+                    text: '我剋',
+                    fullName: '我剋 (財星)'
+                };
+            case 3: // 剋我 (官殺)
+                return {
+                    type: 'kewo',
+                    text: '剋我',
+                    fullName: '剋我 (官殺)'
+                };
+            case 4: // 生我 (印星)
+                return {
+                    type: 'shengwo',
+                    text: '生我',
+                    fullName: '生我 (印星)'
+                };
+        }
+        
+        return null;
+    }
+
+    // 命盤渲染函數
+    function renderBazi() {
+        try {
+            const box = document.getElementById('bazi-box');
+            box.innerHTML = '';
+            const labels = ["時柱", "日柱", "月柱", "年柱"];
+            const dm = bazi.gan[1]; // 日主天干
+            document.getElementById('dm-tag').innerText = dm;
+
+            for (let i = 0; i < 4; i++) {
+                const g = bazi.gan[i], z = bazi.zhi[i];
+                const col = document.createElement('div');
+                col.className = 'column';
+                
+                // 計算五行生剋關係（日柱天干不與自己比較）
+                const ganRelation = (i !== 1) ? getWuxingRelation(dm, g) : null;
+                const zhiRelation = getWuxingRelation(dm, z);
+                
+                // 藏干
+                const cgItems = CANG_GAN[z].map(c => {
+                    return `
+                    <div class="cg-row">
+                        <span class="${attrMap[c]}">${c}</span>
+                        <span style="color:#888">${getShiShen(c, dm)}</span>
+                    </div>
+                    `;
+                }).join('');
+
+                // 天干的五行生剋小字
+                const ganBadge = ganRelation ? 
+                    `<div class="wuxing-relation-badge badge-${ganRelation.type}" title="${ganRelation.fullName}">${ganRelation.text}</div>` : 
+                    '';
+                
+                // 地支的五行生剋小字
+                const zhiBadge = zhiRelation ? 
+                    `<div class="wuxing-relation-badge badge-${zhiRelation.type}" title="${zhiRelation.fullName}">${zhiRelation.text}</div>` : 
+                    '';
+
+                col.innerHTML = `
+    <div class="col-header">${labels[i]}</div>
+    <div class="slot ${attrMap[g]}" data-txt="${g}" 
+         onclick="handleNodeClick('${g}')" 
+         oncontextmenu="openPicker(event, 'gan', ${i}); return false;"
+         title="${g} - ${getShiShen(g, dm)}${ganRelation ? ' | ' + ganRelation.fullName : ''}">
+        <div class="shishen-top">${getShiShen(g, dm)}</div>${g}
+        ${ganBadge}
+    </div>
+    <div class="slot ${attrMap[z]}" data-txt="${z}" 
+         onclick="handleNodeClick('${z}')" 
+         oncontextmenu="openPicker(event, 'zhi', ${i}); return false;"
+         title="${z} - ${INFO_DB[z]?.shengxiao || ''}${zhiRelation ? ' | ' + zhiRelation.fullName : ''}">
+        ${z}
+        <div class="canggan-wrap">${cgItems}</div>
+        ${zhiBadge}
+    </div>
+`;
+                box.appendChild(col);
+            }
+            
+            // 更新日主五行信息提示
+            updateDaymasterInfo(dm);
+            
+            if (curMain) updateHighlight(curMain);
+            
+        } catch (error) {
+            console.error('渲染命盤失敗:', error);
+        }
+    }
+
+    function handleNodeClick(txt) {
+        try {
+            // 如果點擊的正是目前的主角，則取消選取（恢復全彩）
+            if (curMain === txt) {
+                resetView();
+                return;
+            }
+            
+            // 設定新主角
+            curMain = txt;
+            updateInfoPanel(txt);
+            updateHighlight(txt);
+            
+        } catch (error) {
+            console.error('節點點擊錯誤:', error);
+        }
+    }
+
+    function resetView() {
+        curMain = null;
+        document.getElementById('info-big-char').innerText = '-';
+        document.getElementById('info-attr').innerText = '請點擊格位';
+        document.getElementById('info-body').innerHTML = '';
+        
+        // 移除互動相關的狀態
+        document.querySelectorAll('.slot, .node').forEach(el => {
+            el.classList.remove('main-active', 'rel-good', 'rel-bad', 'dimmed');
+            el.style.opacity = '1';
+            el.style.filter = 'none';
+            el.style.transform = '';
+        });
+        
+        // 清除關係小字（保留五行生剋小字）
+        document.querySelectorAll('.relation-badge').forEach(badge => badge.remove());
+        
+        // 清除 Canvas 連線
+        const cvs = document.getElementById('canvas');
+        const ctx = cvs.getContext('2d');
+        ctx.clearRect(0, 0, 800, 800);
+    }
+
+    function updateInfoPanel(txt) {
+        try {
+            const dm = bazi.gan[1];
+            const info = INFO_DB[txt];
+            if (!info) return;
+
+            const rels = REL_DETAILS[txt] || {good:[], bad:[]};
+            
+            const titleEl = document.getElementById('info-big-char');
+            titleEl.innerText = txt;
+            titleEl.className = attrMap[txt]; 
+
+            const wuxingStr = `${ELEM_NAME[info.wuxing]}`;
+            let ss = '';
+            if (!['木','火','土','金','水'].includes(txt)) {
+                ss = ` ‧ ${getShiShen(txt, dm)}`;
+            }
+            
+            // 添加與日主的五行關係
+            const wuxingRelation = getWuxingRelation(dm, txt);
+            const relationStr = wuxingRelation ? ` ‧ ${wuxingRelation.fullName}` : '';
+            
+            document.getElementById('info-attr').innerText = `[${info.yy || ''}${wuxingStr}]${ss}${relationStr}`;
+
+            let html = `
+                ${info.shengxiao ? `<div class="detail-row"><span class="detail-label">生肖</span><span class="detail-val">${info.shengxiao}</span></div>` : ''}
+                ${info.month ? `<div class="detail-row"><span class="detail-label">月份</span><span class="detail-val">${info.month} (${info.season})</span></div>` : ''}
+                ${info.jieqi && info.jieqi !== '-' ? `<div class="detail-row"><span class="detail-label">節氣</span><span class="detail-val">${info.jieqi}</span></div>` : ''}
+                ${info.time ? `<div class="detail-row"><span class="detail-label">時辰</span><span class="detail-val">${info.time}</span></div>` : ''}
+                ${info.dir ? `<div class="detail-row"><span class="detail-label">方位</span><span class="detail-val">${info.dir}</span></div>` : ''}
+            `;
+
+            // 顯示與日主的五行關係詳情
+            if (wuxingRelation) {
+                html += `<div class="rel-group"><div class="rel-title">與日主(${dm})的五行關係</div>`;
+                html += `<div class="rel-item">
+                    <span class="wuxing-relation-badge badge-${wuxingRelation.type}" style="position:relative; top:0; left:0; display:inline-block; margin-right:8px;">${wuxingRelation.text}</span>
+                    ${wuxingRelation.fullName}
+                </div>`;
+                html += `</div>`;
+            }
+
+            // 顯示直接關係（合沖刑害等）
+            if (rels.good.length > 0 || rels.bad.length > 0) {
+                html += `<div class="rel-group"><div class="rel-title">地支特殊關係</div>`;
+                
+                if (rels.good.length > 0) {
+                    html += `<div style="color:var(--wood); font-size:13px; margin-bottom:8px;">好關係：</div>`;
+                    rels.good.forEach(r => {
+                        const relType = detectRelationType(r.d);
+                        html += `<div class="rel-item">
+                            <span class="rel-tag tag-good">${r.t.join('')}</span>
+                            <span style="color:#aaa; font-size:11px; margin-left:4px;">(${relType.text})</span>
+                            ${r.d}
+                        </div>`;
+                    });
+                }
+                
+                if (rels.bad.length > 0) {
+                    html += `<div style="color:var(--fire); font-size:13px; margin:12px 0 8px 0;">壞關係：</div>`;
+                    rels.bad.forEach(r => {
+                        const relType = detectRelationType(r.d);
+                        html += `<div class="rel-item">
+                            <span class="rel-tag tag-control">${r.t.join('')}</span>
+                            <span style="color:#aaa; font-size:11px; margin-left:4px;">(${relType.text})</span>
+                            ${r.d}
+                        </div>`;
+                    });
+                }
+                
+                html += `</div>`;
+            }
+
+            document.getElementById('info-body').innerHTML = html;
+            
+        } catch (error) {
+            console.error('更新資訊面板失敗:', error);
+        }
+    }
+
+    function updateDaymasterInfo(dm) {
+        const dmInfo = INFO_DB[dm];
+        if (!dmInfo) return;
+        
+        // 在提示區域添加日主五行信息
+        const hintElement = document.querySelector('.hint-text');
+        const originalHint = hintElement.innerHTML;
+        
+        // 移除舊的日主信息
+        const newHint = originalHint.replace(/日主：.*?<br>/, '');
+        
+        hintElement.innerHTML = `日主：${dm} (${dmInfo.yy}${ELEM_NAME[dmInfo.wuxing]})<br>` + newHint;
+    }
+
+    function detectRelationType(relationDesc) {
+        if (relationDesc.includes('六合')) return { type: 'he', text: '合' };
+        if (relationDesc.includes('三會')) return { type: 'hui', text: '會' };
+        if (relationDesc.includes('三合')) return { type: 'sanhe', text: '三合' };
+        if (relationDesc.includes('沖')) return { type: 'chong', text: '沖' };
+        if (relationDesc.includes('刑')) return { type: 'xing', text: '刑' };
+        if (relationDesc.includes('害')) return { type: 'hai', text: '害' };
+        if (relationDesc.includes('剋')) return { type: 'ke', text: '剋' };
+        if (relationDesc.includes('合')) return { type: 'he', text: '合' }; // 天干合
+        return { type: 'other', text: '' };
+    }
+    
+    function getRelationDetails(src, tgt) {
+        const rels = REL_DETAILS[src] || {good: [], bad: []};
+        
+        // 檢查好關係
+        for (const rel of rels.good) {
+            if (rel.t.includes(tgt)) {
+                const relType = detectRelationType(rel.d);
+                return {
+                    type: 'good',
+                    symbol: '✓',
+                    desc: rel.d,
+                    relType: relType.type,
+                    badgeText: relType.text
+                };
+            }
+        }
+        
+        // 檢查壞關係
+        for (const rel of rels.bad) {
+            if (rel.t.includes(tgt)) {
+                const relType = detectRelationType(rel.d);
+                return {
+                    type: 'bad',
+                    symbol: '✗',
+                    desc: rel.d,
+                    relType: relType.type,
+                    badgeText: relType.text
+                };
+            }
+        }
+        
+        // 檢查天干五行相剋關係
+        if (GANS.includes(src) && GANS.includes(tgt)) {
+            const fiveRel = getFiveRel(src, tgt);
+            if (fiveRel.type === 'enemy' || fiveRel.type === 'prisoner') {
+                return {
+                    type: 'bad',
+                    symbol: '✗',
+                    desc: fiveRel.label,
+                    relType: 'ke',
+                    badgeText: '剋'
+                };
+            }
+        }
+        
+        return null;
+    }
+
+    function updateHighlight(txt) {
+        try {
+            // 清除關係小字（保留五行生剋小字）
+            document.querySelectorAll('.relation-badge').forEach(badge => badge.remove());
+            
+            const rels = REL_DETAILS[txt] || {good:[], bad:[]};
+            const goodSet = new Set();
+            const badSet = new Set();
+            const relationMap = new Map();
+            
+            // 收集好關係
+            rels.good.forEach(g => {
+                g.t.forEach(c => {
+                    goodSet.add(c);
+                    const relType = detectRelationType(g.d);
+                    relationMap.set(c, {
+                        type: 'good',
+                        badgeText: relType.text,
+                        badgeClass: `badge-${relType.type}`,
+                        desc: g.d
+                    });
+                });
+            });
+            
+            // 收集壞關係
+            rels.bad.forEach(b => {
+                b.t.forEach(c => {
+                    badSet.add(c);
+                    const relType = detectRelationType(b.d);
+                    relationMap.set(c, {
+                        type: 'bad',
+                        badgeText: relType.text,
+                        badgeClass: `badge-${relType.type}`,
+                        desc: b.d
+                    });
+                });
+            });
+            
+            // 檢查天干五行相剋關係
+            if (GANS.includes(txt)) {
+                GANS.forEach(gan => {
+                    if (gan !== txt) {
+                        const fiveRel = getFiveRel(txt, gan);
+                        if (fiveRel.type === 'enemy' || fiveRel.type === 'prisoner') {
+                            badSet.add(gan);
+                            relationMap.set(gan, {
+                                type: 'bad',
+                                badgeText: '剋',
+                                badgeClass: 'badge-ke',
+                                desc: fiveRel.label
+                            });
+                        }
+                    }
+                });
+            }
+            
+            const allElements = document.querySelectorAll('.slot, .node');
+            
+            allElements.forEach(el => {
+                const t = el.getAttribute('data-txt');
+                
+                if (!t) return;
+                
+                // 清除互動狀態，但保留五行生剋小字
+                el.classList.remove('main-active', 'rel-good', 'rel-bad', 'dimmed');
+                
+                // 重置基本樣式
+                el.style.opacity = '';
+                el.style.filter = '';
+                el.style.transform = '';
+                
+                if (t === txt) {
+                    // 主角：白色高亮
+                    el.classList.add('main-active');
+                } else {
+                    const relationInfo = relationMap.get(t);
+                    
+                    if (relationInfo) {
+                        // 有關係的元素：根據關係類型設置樣式
+                        if (relationInfo.type === 'good') {
+                            el.classList.add('rel-good');
+                        } else {
+                            el.classList.add('rel-bad');
+                        }
+                        
+                        // 添加關係小字（右上方）
+                        if (relationInfo.badgeText) {
+                            const badge = document.createElement('div');
+                            badge.className = `relation-badge ${relationInfo.badgeClass}`;
+                            badge.textContent = relationInfo.badgeText;
+                            badge.title = relationInfo.desc;
+                            el.appendChild(badge);
+                        }
+                    } else {
+                        // 不相關的元素：灰色半透明
+                        el.classList.add('dimmed');
+                        el.style.opacity = '0.4';
+                        el.style.filter = 'grayscale(80%)';
+                        el.style.transform = 'scale(0.95)';
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('更新高亮失敗:', error);
+        }
+    }
+
+    // --- 羅盤地圖生成 ---
+    function initMap() {
+        const map = document.getElementById('map'); 
+        map.innerHTML = '';
+        
+        // 1. 五行 (內圈)
+        const elems = ["木","火","土","金","水"];
+        const elemAngs = [198, 270, 342, 54, 126]; 
+        
+        elems.forEach((e, i) => {
+            createNode(e, 85, elemAngs[i], 'n-elem ' + attrMap[e]);
+        });
+
+        // 2. 天干 (中圈)
+        const ganPos = [
+            {t:'甲', a:180},
+            {t:'乙', a:216},
+            {t:'丙', a:252},
+            {t:'丁', a:288},
+            {t:'戊', a:324},
+            {t:'己', a:0},
+            {t:'庚', a:36},
+            {t:'辛', a:72},
+            {t:'壬', a:108},
+            {t:'癸', a:144}
+        ];
+        
+        ganPos.forEach(p => createNode(p.t, 165, p.a, 'n-tg ' + attrMap[p.t]));
+
+        // 3. 地支 (外圈)
+        const zhiOrder = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+        const startAng = 90; 
+        
+        zhiOrder.forEach((z, i) => {
+            createNode(z, 265, startAng + i * 30, 'n-dz ' + attrMap[z]);
+        });
+
+        // 渲染八字命盤
+        renderBazi();
+        
+        // 只初始化資訊面板
+        document.getElementById('info-big-char').innerText = '-';
+        document.getElementById('info-attr').innerText = '請點擊格位';
+        document.getElementById('info-body').innerHTML = '';
+        
+        // 清除當前選中的主角
+        curMain = null;
+        
+        // 隱藏載入動畫
+        setTimeout(() => {
+            document.getElementById('loading-overlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }, 500);
+        }, 500);
+    }
+
+    function createNode(txt, dist, angle, cls) {
+        const rad = angle * Math.PI / 180;
+        const x = Math.cos(rad) * dist + 400; 
+        const y = Math.sin(rad) * dist + 400;
+        const btn = document.createElement('div'); 
+        btn.className = 'node ' + cls;
+        btn.style.left = x + 'px'; 
+        btn.style.top = y + 'px'; 
+        btn.innerText = txt;
+        btn.setAttribute('data-txt', txt);
+        
+        const dm = bazi.gan[1];
+        const wuxingRelation = getWuxingRelation(dm, txt);
+        const relationInfo = wuxingRelation ? ` | ${wuxingRelation.fullName}` : '';
+        
+        btn.setAttribute('aria-label', `${txt} - ${INFO_DB[txt]?.wuxing || '五行'}${relationInfo}`);
+        btn.onclick = () => handleNodeClick(txt);
+        btn.onmouseenter = (e) => {
+            let tipText = `${txt} (${ELEM_NAME[attrMap[txt]]})`;
+            
+            // 添加與日主的五行關係
+            if (wuxingRelation) {
+                tipText += ` | ${wuxingRelation.fullName}`;
+            }
+            
+            // 如果有當前選中元素，顯示與它的關係
+            if (curMain && curMain !== txt) {
+                const relation = getRelationDetails(curMain, txt);
+                if (relation) {
+                    const relationType = detectRelationType(relation.desc);
+                    tipText += ` | ${relationType.text}: ${relation.desc}`;
+                }
+            }
+            
+            showTooltip(tipText, e.clientX + 10, e.clientY - 10);
+        };
+        
+        document.getElementById('map').appendChild(btn);
+    }
+
+    // --- 羅盤顯示/隱藏功能 ---
+    function toggleCompass() {
+        const body = document.body;
+        const toggleBtn = document.getElementById('toggle-compass');
+        
+        if (compassVisible) {
+            // 隱藏羅盤
+            body.classList.add('hide-compass');
+            toggleBtn.innerHTML = '◉';
+            toggleBtn.title = '顯示羅盤';
+            compassVisible = false;
+            
+            // 在詳情面板上添加特殊類，以便CSS定位
+            document.querySelector('.info-card').classList.add('compass-hidden-mode');
+            
+        } else {
+            // 顯示羅盤
+            body.classList.remove('hide-compass');
+            toggleBtn.innerHTML = '◎';
+            toggleBtn.title = '隱藏羅盤';
+            compassVisible = true;
+            
+            // 移除特殊類
+            document.querySelector('.info-card').classList.remove('compass-hidden-mode');
+        }
+    }
+
+    // --- 選擇器功能 ---
+    function openPicker(e, type, index) {
+        try {
+            e.preventDefault(); 
+            const menu = document.getElementById('picker-menu');
+            menu.innerHTML = '';
+            const list = (type === 'gan') ? GANS : ZHIS;
+            list.forEach(item => {
+                const btn = document.createElement('div');
+                btn.className = `picker-btn ${attrMap[item]}`;
+                btn.innerText = item;
+                btn.onclick = (ev) => {
+                    ev.stopPropagation();
+                    if(type === 'gan') {
+                        bazi.gan[index] = item;
+                    } else {
+                        bazi.zhi[index] = item;
+                    }
+                    closePicker();
+                    renderBazi();
+                    if(curMain) handleNodeClick(curMain);
+                };
+                menu.appendChild(btn);
+            });
+            const overlay = document.getElementById('picker-overlay');
+            overlay.style.display = 'block';
+            let x = e.clientX, y = e.clientY;
+            const menuWidth = 250;
+            const menuHeight = 200;
+            if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+            if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 10;
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+        } catch (error) {
+            console.error('打開選擇器失敗:', error);
+        }
+    }
+
+    function closePicker() {
+        document.getElementById('picker-overlay').style.display = 'none';
+    }
+
+    // --- 其他功能 ---
+    function randomBazi() {
+        bazi.gan = Array(4).fill(0).map(() => GANS[Math.floor(Math.random() * GANS.length)]);
+        bazi.zhi = Array(4).fill(0).map(() => ZHIS[Math.floor(Math.random() * ZHIS.length)]);
+        resetView();
+        renderBazi();
+        showTooltip('已隨機生成新命盤', window.innerWidth / 2, 50);
+    }
+
+    function toggleZoom() {
+        const ov = document.getElementById('zoom-overlay');
+        const target = document.getElementById('zoom-target');
+        const original = document.getElementById('bazi-box');
+        
+        if (ov.style.display !== 'flex') {
+            target.innerHTML = original.innerHTML;
+            target.classList.add('bazi-grid');
+            ov.style.display = 'flex';
+        } else {
+            ov.style.display = 'none';
+            target.innerHTML = '';
+        }
+    }
+
+    // --- 動畫循環 ---
+    function animate(timestamp) {
+        if (!isAnimating) {
+            isAnimating = true;
+            lastFrameTime = timestamp || performance.now();
+        }
+
+        const delta = timestamp - lastFrameTime;
+        
+        if (delta >= FRAME_INTERVAL) {
+            if (curMain) {
+                const cvs = document.getElementById('canvas');
+                const ctx = cvs.getContext('2d');
+                ctx.clearRect(0, 0, 800, 800);
+            }
+            lastFrameTime = timestamp - (delta % FRAME_INTERVAL);
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    // --- 鍵盤快捷鍵 ---
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        
+        switch(e.key) {
+            case 'Escape':
+                resetView();
+                closePicker();
+                break;
+            case 'r':
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    randomBazi();
+                }
+                break;
+            case ' ':
+                e.preventDefault();
+                if (curMain) resetView();
+                break;
+            case 'h':
+            case 'H':
+                e.preventDefault();
+                toggleCompass();
+                break;
+        }
+    });
+
+    // --- 初始化 ---
+    window.onload = () => { 
+        initMap(); 
+        requestAnimationFrame(animate);
+        
+        // 添加羅盤切換按鈕事件
+        document.getElementById('toggle-compass').addEventListener('click', toggleCompass);
+        
+        // 更新提示文字
+        const hintElement = document.querySelector('.hint-text');
+       /* const baseHint = '💡 點選文字：聚焦關聯 (再次點選還原) | ';
+        
+        if ('ontouchstart' in window) {
+            hintElement.innerHTML = baseHint + '📱 長按可編輯 | 點擊右上角按鈕切換羅盤<br>' +
+                                   '右上：地支關係 | 下方：五行生剋<br>' +
+                                   '生我(印) | 我生(食傷) | 同我(比劫) | 我剋(財) | 剋我(官殺)';
+        } else {
+            hintElement.innerHTML = baseHint + '右鍵可編輯 | 點擊右上角按鈕切換羅盤<br>' +
+                                   '右上：地支關係 | 下方：五行生剋<br>' +
+                                   '生我(印) | 我生(食傷) | 同我(比劫) | 我剋(財) | 剋我(官殺)';
+        } */
+    };
+    
+</script>
+</body>
+</html>
